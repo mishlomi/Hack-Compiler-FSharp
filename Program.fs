@@ -7,9 +7,9 @@ let main argv =
     //Michalws path
     //let folderPath = @"c:\גיבוי מחשב ישן\קורסים\עקרונות שפות תוכנה\קבצים\nand2tetris\projects\07\StackArithmetic\SimpleAdd" 
     //Naomiws path
-    let folderPath :string = @"C:\NandToTetris\nand2tetris\nand2tetris\projects\7\StackArithmetic\StackTest"
-    let inputPath = Path.Combine(folderPath, "StackTest.vm")
-    let outputPath = Path.Combine(folderPath, "StackTest.asm")
+    let folderPath :string = @"C:\NandToTetris\nand2tetris\nand2tetris\projects\7\MemoryAccess\BasicTest"
+    let inputPath = Path.Combine(folderPath, "BasicTest.vm")
+    let outputPath = Path.Combine(folderPath, "BasicTest.asm")
 
     if File.Exists(inputPath) then
         let lines = File.ReadAllLines(inputPath)
