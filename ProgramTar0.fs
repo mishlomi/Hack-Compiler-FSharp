@@ -1,15 +1,19 @@
-﻿open System
+﻿//michal shlomi 211503370
+//naomi malka 345887640
+//150060.21.5786.41
+
+open System
 open System.IO
 
-// משתנה גלובאלי לשמירת שם הקובץ שנפתח לקריאה, ללא הסיומת VM [cite: 89]
+// Global variable to store the name of the file currently being read (without the .vm extension)
 let mutable currentFileName = ""
 
-// --- פונקציות עזר לפקודות אריתמטיות [cite: 96, 97] ---
+// --- Helper functions for arithmetic commands ---
 let handleAdd (writer: StreamWriter) = writer.WriteLine("command: add")
 let handleSub (writer: StreamWriter) = writer.WriteLine("command: sub")
 let handlNeg (writer: StreamWriter) = writer.WriteLine("command: neg")
 
-// --- פונקציות עזר לפקודות לוגיות [cite: 96, 97] ---
+// --- Helper functions for logical commands ---
 let handleEq (writer: StreamWriter) (counter: int) =
     writer.WriteLine("command: eq")
     writer.WriteLine($"counter: {counter}")
@@ -22,7 +26,7 @@ let handleLt (writer: StreamWriter) (counter: int) =
     writer.WriteLine("command: lt")
     writer.WriteLine($"counter: {counter}")
 
-// --- פונקציות עזר לפקודות גישה לזיכרון [cite: 96, 97] ---
+// --- Helper functions for memory access commands ---
 let handlePush (writer: StreamWriter) (segment: string) (index: string) =
     writer.WriteLine($"command: push segment {segment} index {index}")
 
@@ -32,49 +36,44 @@ let handlePop (writer: StreamWriter) (segment: string) (index: string) =
 
 [<EntryPoint>]
 let main argv =
-
-
-    let a : int = 4
-    Console.WriteLine(a)
-
-    // התוכנית תקבל כקלט מהמשתמש מחרוזת שמכילה מסלול לתיקייה [cite: 80]
+    // The program asks the user to enter a string containing the path of the folder
     Console.WriteLine("Please enter the folder path containing the VM files:")
     let folderPath = Console.ReadLine()
     
-    // בדיקה שהתיקייה אכן קיימת
+    // Check that the folder actually exists
     if Directory.Exists(folderPath) then
         
-        // עליכם לחלץ את שם התיקייה האחרונה מתוך מחרוזת הקלט [cite: 83]
+        // Extract the name of the last folder from the input path
         let folderName = DirectoryInfo(folderPath).Name
         
-        // לצורך פלט, התוכנית תיצור קובץ טקסט חדש עם סיומת asm [cite: 82]
+        // The program creates a new output text file with the extension .asm
         let outputFilePath = Path.Combine(folderPath, folderName + ".asm")
         
-        // התוכנית תפתח את קובץ הפלט לכתיבה [cite: 85]
+        // Open the output file for writing
         use writer = new StreamWriter(outputFilePath)
         
-        // התוכנית תעבור על כל קבצי הקלט מסוג vm שקיימים בתיקיית הקלט [cite: 86]
+        // The program goes through all input files with the .vm extension in the folder
         let vmFiles = Directory.GetFiles(folderPath, "*.vm")
         
         for vmFile in vmFiles do
-            // התוכנית תגדיר מונה ותאפס אותו [cite: 88]
+            // Initialize the logical command counter
             let mutable logicalCounter = 0
             
-            // התוכנית תשמור במשתנה גלובאלי את שם הקובץ ללא הסיומת VM [cite: 89]
+            // Store the current file name (without the .vm extension) in a global variable
             currentFileName <- Path.GetFileNameWithoutExtension(vmFile)
             
-            // התוכנית תפתח את הקובץ לקריאה [cite: 90]
+            // Open the file for reading
             let lines = File.ReadAllLines(vmFile)
             
-            // התוכנית תקרא את קובץ ה VM שורה אחר שורה [cite: 91]
+            // Read the VM file line by line
             for line in lines do
                 let trimmedLine = line.Trim()
                 if trimmedLine.Length > 0 then
-                    // תפרק את השורה (מחרוזת) למילים [cite: 93]
+                    // Split the line into words
                     let words = trimmedLine.Split([|' '|], StringSplitOptions.RemoveEmptyEntries)
                     let command = words.[0]
                     
-                    // תבדוק מה היא המילה הראשונה בשורה ותקרא לפונקציית עזר ייעודית [cite: 94]
+                    // Check the first word (the VM command) and call the corresponding helper function
                     match command with
                     | "add" -> handleAdd writer
                     | "sub" -> handleSub writer
@@ -90,15 +89,36 @@ let main argv =
                         handleLt writer logicalCounter
                     | "push" -> handlePush writer words.[1] words.[2]
                     | "pop" -> handlePop writer words.[1] words.[2]
-                    | _ -> () // התעלמות מפקודות שאינן בטבלה
+                    | _ -> () // Ignore commands that are not in the required table
             
-            // התוכנית תסגור את קובץ הקלט (נעשה אוטומטית ע"י ReadAllLines) [cite: 99]
-            // התוכנית תדפיס למסך את המחרוזת: “End of input file: “ ולשרשר אותה לשם קובץ הקלט [cite: 100]
+            // The input file is automatically closed after ReadAllLines
+            // Print to the screen the message "End of input file:" followed by the input file name
             Console.WriteLine($"End of input file:  {Path.GetFileName(vmFile)}")
             
-        // בסיום קריאת כל קבצי הקלט VM, התוכנית תדפיס למסך את המחרוזת [cite: 104]
+        // After reading all VM input files, print the final message
         Console.WriteLine($"Output file is ready: {folderName}.asm")
 
+    if File.Exists(inputPath) then
+        // 1. קוראים את כל קובץ ה-VM
+        let lines = File.ReadAllLines(inputPath)
+        
+        // 2. פותחים את ה-CodeWriter שלנו
+        let codeWriter = new CodeWriter(outputPath)
+
+        // 3. עוברים על כל שורה
+        for line in lines do
+            match Parser.parseLine line with
+            | Some(cmd) -> 
+                // אם המפענח מצא פקודה חוקית, שולחים אותה לתרגום
+                match cmd with
+                | Arithmetic(op) -> codeWriter.WriteArithmetic(op)
+                | Push(_, _) | Pop(_, _) -> codeWriter.WritePushPop(cmd)
+                | Unknown -> ()
+            | None -> () // מתעלמים משורות ריקות או הערות
+
+        // 4. סוגרים את הקובץ בסיום
+        codeWriter.Close()
+        printfn "Boom! Translated successfully to %s" outputPath
     else
         Console.WriteLine("Error: The specified directory does not exist.")
 
