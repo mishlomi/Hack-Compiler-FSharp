@@ -4,6 +4,7 @@ open System.IO
 type CodeWriter(outputFilePath: string) =
     // פותחים את קובץ הפלט לכתיבה
     let writer = new StreamWriter(outputFilePath)
+    let mutable labelCount = 0
 
     // תרגום פקודות אריתמטיות
     member this.WriteArithmetic(command: string) =
@@ -30,7 +31,58 @@ type CodeWriter(outputFilePath: string) =
             writer.WriteLine("A=M-1")  // ניגשים ישירות לאיבר העליון (בלי לשנות את SP)
             writer.WriteLine("M=-M")   // הופכים את הסימן שלו
 
-        // בהמשך נוסיף כאן את eq, gt, lt, and, or, not
+        
+        | "and" | "or" as op ->
+           let operation =
+             match op with
+             | "and" -> "D&M"
+             | "or" -> "D|M"
+           writer.WriteLine("@SP")
+           writer.WriteLine("A=M-1")
+           writer.WriteLine("D=M")
+           writer.WriteLine("A=A-1")
+           writer.WriteLine($"M={operation}")
+           writer.WriteLine("@SP")
+           writer.WriteLine("M=M-1")
+
+
+        | "not" ->
+            writer.WriteLine("@SP")
+            writer.WriteLine("A=M-1")
+            writer.WriteLine("M=!M")
+
+
+        | "eq" | "gt" | "lt" ->
+            let labelTrue = sprintf "LABEL_TRUE_%d" labelCount
+            let labelEnd = sprintf "LABEL_END_%d" labelCount
+            labelCount <- labelCount + 1
+            let jump = match command with "eq" -> "JEQ" | "gt" -> "JGT" | "lt" -> "JLT" | _ -> ""
+
+            writer.WriteLine("@SP")
+            writer.WriteLine("A=M-1")
+            writer.WriteLine("D=M")    // D = y
+            writer.WriteLine("A=A-1")
+            writer.WriteLine("D=M-D")  // D = x - y
+            writer.WriteLine(sprintf "@%s" labelTrue)
+            writer.WriteLine(sprintf "D;%s" jump)
+            // if false
+            writer.WriteLine("@SP")
+            writer.WriteLine("A=M-1")
+            writer.WriteLine("A=A-1")
+            writer.WriteLine("M=0")    // Result = False (0)
+            writer.WriteLine(sprintf "@%s" labelEnd)
+            writer.WriteLine("0;JMP")
+            // if true
+            writer.WriteLine(sprintf "(%s)" labelTrue)
+            writer.WriteLine("@SP")
+            writer.WriteLine("A=M-1")
+            writer.WriteLine("A=A-1")
+            writer.WriteLine("M=-1")   // Result = True (-1)
+            writer.WriteLine(sprintf "(%s)" labelEnd)
+            writer.WriteLine("@SP")
+            writer.WriteLine("M=M-1")   // SP-- (Two numbers reduced to one result)
+
+
         | _ -> () 
 
     // תרגום פקודות push ו-pop
