@@ -52,3 +52,5 @@ type CodeWriter(outputFilePath: string) =
     // פונקציה לסגירת הקובץ בסיום
     member this.Close() =
         writer.Close()
+
+        

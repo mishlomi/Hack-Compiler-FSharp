@@ -21,3 +21,5 @@ module Parser =
             | "push" -> Some(Push(parts.[1], int parts.[2]))
             | "pop"  -> Some(Pop(parts.[1], int parts.[2]))
             | cmd -> Some(Arithmetic(cmd)) // כל השאר (add, sub וכו') מוגדר כאריתמטי בינתיים
+
+            
