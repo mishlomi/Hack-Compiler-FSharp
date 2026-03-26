@@ -86,7 +86,7 @@ type CodeWriter(outputFilePath: string) =
 
         | _ -> () 
 
-    // תרגום פקודות push ו-pop
+    // Translate push and pop commands
     member this.WritePushPop(cmd: Command) =
         match cmd with
         | Push(segment, index) ->
@@ -135,14 +135,14 @@ type CodeWriter(outputFilePath: string) =
                 writer.WriteLine("M=M+1")
 
             | "pointer" ->
-                // קובעים אם אנחנו ניגשים ל-THIS או ל-THAT לפי האינדקס
+                // Determine whether we access THIS or THAT by index
                 let pointerReg = if index = 0 then "THIS" else "THAT"
                 
-                // קוראים את הערך שנמצא ברגיסטר
+                // Read the value in the register
                 writer.WriteLine(sprintf "@%s" pointerReg)
                 writer.WriteLine("D=M")
                 
-                // דוחפים את הערך למחסנית (SP)
+                // Push the value onto the stack (SP)
                 writer.WriteLine("@SP")
                 writer.WriteLine("A=M")
                 writer.WriteLine("M=D")
@@ -208,12 +208,12 @@ type CodeWriter(outputFilePath: string) =
             | "pointer" ->
                 let pointerReg = if index = 0 then "THIS" else "THAT"
                 
-                // שולפים את הערך העליון מהמחסנית לתוך D
+                // Pop the top value from the stack into D
                 writer.WriteLine("@SP")
                 writer.WriteLine("AM=M-1")
                 writer.WriteLine("D=M")
                 
-                // שומרים את הערך ישירות לתוך THIS או THAT
+                // Save the value directly into THIS or THAT
                 writer.WriteLine(sprintf "@%s" pointerReg)
                 writer.WriteLine("M=D")
 
