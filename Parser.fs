@@ -1,7 +1,7 @@
 namespace Nand2Tetris
 open System
 
-// הגדרת סוגי הפקודות האפשריות בצורה חכמה
+//  definition of the possible VM command types
 type Command =
     | Arithmetic of string
     | Push of segment: string * index: int
@@ -9,17 +9,18 @@ type Command =
     | Unknown
 
 module Parser =
-    // פונקציה שמקבלת שורת טקסט ומחזירה אובייקט פקודה (או None אם זו הערה/שורה ריקה)
+    // Parses a single line of VM code and returns a Command object
+    // Returns None if the line is a comment or empty
     let parseLine (line: string) : Command option =
         let clean = line.Split("//").[0].Trim()
         
         if clean = "" then 
-            None // מתעלמים משורות ריקות והערות
+            None // Ignore empty lines and full-line comments
         else
             let parts = clean.Split(' ', StringSplitOptions.RemoveEmptyEntries)
             match parts.[0] with
             | "push" -> Some(Push(parts.[1], int parts.[2]))
             | "pop"  -> Some(Pop(parts.[1], int parts.[2]))
-            | cmd -> Some(Arithmetic(cmd)) // כל השאר (add, sub וכו') מוגדר כאריתמטי בינתיים
+            | cmd -> Some(Arithmetic(cmd)) // For now, any other command (add, sub, eq, etc.) is treated as Arithmetic
 
             

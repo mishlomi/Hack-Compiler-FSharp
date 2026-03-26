@@ -2,14 +2,14 @@ namespace Nand2Tetris
 open System.IO
 
 type CodeWriter(outputFilePath: string) =
-    // פותחים את קובץ הפלט לכתיבה
+    // Open the output file for writing
     let writer = new StreamWriter(outputFilePath)
     let mutable labelCount = 0
     let fileName = Path.GetFileNameWithoutExtension(outputFilePath)
 
-    // תרגום פקודות אריתמטיות
+    // Translates arithmetic VM commands 
     member this.WriteArithmetic(command: string) =
-        writer.WriteLine(sprintf "// %s" command) // תמיד טוב לכתוב את פקודת המקור כהערה
+        writer.WriteLine(sprintf "// %s" command) // Write the original command as a comment
         match command with
         | "add" ->
             writer.WriteLine("@SP")
@@ -22,15 +22,15 @@ type CodeWriter(outputFilePath: string) =
 
         | "sub" ->
             writer.WriteLine("@SP")
-            writer.WriteLine("AM=M-1") // יורדים לאיבר העליון (y)
-            writer.WriteLine("D=M")    // שומרים את y ב-D
-            writer.WriteLine("A=A-1")  // יורדים לאיבר שמתחתיו (x)
-            writer.WriteLine("M=M-D")  // עושים x - y ושומרים במקום של x
+            writer.WriteLine("AM=M-1") // Go to the top element (y)
+            writer.WriteLine("D=M")    // Store y in D
+            writer.WriteLine("A=A-1")  // Go to the element below (x)
+            writer.WriteLine("M=M-D")  // Perform x - y and store it in x's position
             
-        | "neg" -> // פעולה אונרית (רק על האיבר העליון)
+        | "neg" -> 
             writer.WriteLine("@SP")
-            writer.WriteLine("A=M-1")  // ניגשים ישירות לאיבר העליון (בלי לשנות את SP)
-            writer.WriteLine("M=-M")   // הופכים את הסימן שלו
+            writer.WriteLine("A=M-1")  // Direct access to the top element (without changing SP)
+            writer.WriteLine("M=-M")   // Negate the value
 
         
         | "and" | "or" as op ->
@@ -231,7 +231,7 @@ type CodeWriter(outputFilePath: string) =
 
             | _ -> ()
         | _ -> ()
-    // פונקציה לסגירת הקובץ בסיום
+    // Closes the output file stream
     member this.Close() =
         writer.Close()
 
