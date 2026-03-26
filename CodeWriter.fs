@@ -133,6 +133,21 @@ type CodeWriter(outputFilePath: string) =
                 writer.WriteLine("@SP")
                 writer.WriteLine("M=M+1")
 
+            | "pointer" ->
+                // קובעים אם אנחנו ניגשים ל-THIS או ל-THAT לפי האינדקס
+                let pointerReg = if index = 0 then "THIS" else "THAT"
+                
+                // קוראים את הערך שנמצא ברגיסטר
+                writer.WriteLine(sprintf "@%s" pointerReg)
+                writer.WriteLine("D=M")
+                
+                // דוחפים את הערך למחסנית (SP)
+                writer.WriteLine("@SP")
+                writer.WriteLine("A=M")
+                writer.WriteLine("M=D")
+                writer.WriteLine("@SP")
+                writer.WriteLine("M=M+1")
+
             | _ -> ()
 
         | Pop(segment, index) ->
@@ -175,10 +190,21 @@ type CodeWriter(outputFilePath: string) =
                 writer.WriteLine(sprintf "@%d" (5 + index))
                 writer.WriteLine("M=D")          // RAM[5+index] = value
 
+            | "pointer" ->
+                let pointerReg = if index = 0 then "THIS" else "THAT"
+                
+                // שולפים את הערך העליון מהמחסנית לתוך D
+                writer.WriteLine("@SP")
+                writer.WriteLine("AM=M-1")
+                writer.WriteLine("D=M")
+                
+                // שומרים את הערך ישירות לתוך THIS או THAT
+                writer.WriteLine(sprintf "@%s" pointerReg)
+                writer.WriteLine("M=D")
+
             | _ -> ()
         | _ -> ()
     // פונקציה לסגירת הקובץ בסיום
     member this.Close() =
         writer.Close()
 
-        

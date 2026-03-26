@@ -4,12 +4,15 @@ open Nand2Tetris
 
 [<EntryPoint>]
 let main argv =
+
     //Michalws path
-    //let folderPath = @"c:\גיבוי מחשב ישן\קורסים\עקרונות שפות תוכנה\קבצים\nand2tetris\projects\07\StackArithmetic\SimpleAdd" 
+    let folderPath = @"C:\NandToTetris\nand2tetris\projects\07\MemoryAccess\PointerTest"
+    
     //Naomiws path
-    let folderPath :string = @"C:\NandToTetris\nand2tetris\nand2tetris\projects\7\MemoryAccess\BasicTest"
-    let inputPath = Path.Combine(folderPath, "BasicTest.vm")
-    let outputPath = Path.Combine(folderPath, "BasicTest.asm")
+    //let folderPath :string = @"C:\NandToTetris\nand2tetris\nand2tetris\projects\7\MemoryAccess\BasicTest"
+
+    let inputPath = Path.Combine(folderPath, "PointerTest.vm")
+    let outputPath = Path.Combine(folderPath, "PointerTest.asm")
 
     if File.Exists(inputPath) then
         let lines = File.ReadAllLines(inputPath)
