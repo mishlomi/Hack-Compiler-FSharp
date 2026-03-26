@@ -6,13 +6,13 @@ open Nand2Tetris
 let main argv =
 
     //Michalws path
-    let folderPath = @"C:\NandToTetris\nand2tetris\projects\07\MemoryAccess\PointerTest"
+    // let folderPath = @"C:\NandToTetris\nand2tetris\projects\07\MemoryAccess\PointerTest"
     
     //Naomiws path
-    //let folderPath :string = @"C:\NandToTetris\nand2tetris\nand2tetris\projects\7\MemoryAccess\BasicTest"
+    let folderPath :string = @"C:\NandToTetris\nand2tetris\nand2tetris\projects\7\MemoryAccess\StaticTest"
 
-    let inputPath = Path.Combine(folderPath, "PointerTest.vm")
-    let outputPath = Path.Combine(folderPath, "PointerTest.asm")
+    let inputPath = Path.Combine(folderPath, "StaticTest.vm")
+    let outputPath = Path.Combine(folderPath, "StaticTest.asm")
 
     if File.Exists(inputPath) then
         let lines = File.ReadAllLines(inputPath)

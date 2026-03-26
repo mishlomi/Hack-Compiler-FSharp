@@ -5,6 +5,7 @@ type CodeWriter(outputFilePath: string) =
     // פותחים את קובץ הפלט לכתיבה
     let writer = new StreamWriter(outputFilePath)
     let mutable labelCount = 0
+    let fileName = Path.GetFileNameWithoutExtension(outputFilePath)
 
     // תרגום פקודות אריתמטיות
     member this.WriteArithmetic(command: string) =
@@ -147,6 +148,20 @@ type CodeWriter(outputFilePath: string) =
                 writer.WriteLine("M=D")
                 writer.WriteLine("@SP")
                 writer.WriteLine("M=M+1")
+            
+            | "static" ->
+                // Static variables are translated to a unique symbol: @FileName.Index
+                writer.WriteLine(sprintf "@%s.%d" fileName index)
+                writer.WriteLine("D=M")          // D = value of the static variable
+                
+                // Push the value from D onto the stack
+                writer.WriteLine("@SP")          // Point to stack pointer
+                writer.WriteLine("A=M")          // Go to the address where SP points
+                writer.WriteLine("M=D")          // Store the value there
+                
+                // Increment the stack pointer
+                writer.WriteLine("@SP")
+                writer.WriteLine("M=M+1")        // SP++
 
             | _ -> ()
 
@@ -201,6 +216,18 @@ type CodeWriter(outputFilePath: string) =
                 // שומרים את הערך ישירות לתוך THIS או THAT
                 writer.WriteLine(sprintf "@%s" pointerReg)
                 writer.WriteLine("M=D")
+
+            | "static" ->
+                // Decrement SP to point to the top value on the stack
+                writer.WriteLine("@SP")
+                writer.WriteLine("M=M-1")        // SP--
+                writer.WriteLine("A=M")          // Go to the top value's address
+                writer.WriteLine("D=M")          // D = top value of the stack
+                
+                // Store the value into the unique static label @FileName.Index
+                // The assembler will assign a specific RAM address (16 to 255)
+                writer.WriteLine(sprintf "@%s.%d" fileName index)
+                writer.WriteLine("M=D")          // Memory[static_var] = D
 
             | _ -> ()
         | _ -> ()
