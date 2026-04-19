@@ -6,6 +6,9 @@ type Command =
     | Arithmetic of string
     | Push of segment: string * index: int
     | Pop of segment: string * index: int
+    | Label of string        
+    | Goto of string        
+    | IfGoto of string    
     | Unknown
 
 module Parser =
@@ -21,6 +24,11 @@ module Parser =
             match parts.[0] with
             | "push" -> Some(Push(parts.[1], int parts.[2]))
             | "pop"  -> Some(Pop(parts.[1], int parts.[2]))
-            | cmd -> Some(Arithmetic(cmd)) // For now, any other command (add, sub, eq, etc.) is treated as Arithmetic
+            | "label"   -> Some(Label(parts.[1]))    
+            | "goto"    -> Some(Goto(parts.[1]))     
+            | "if-goto" -> Some(IfGoto(parts.[1]))  
+            | "add" | "sub" | "neg" | "eq" | "gt" | "lt" | "and" | "or" | "not" -> 
+               Some(Arithmetic(parts.[0]))
+            | _ -> Some(Unknown)
 
             

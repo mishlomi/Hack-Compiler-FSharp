@@ -27,6 +27,9 @@ let main argv =
                     match cmd with
                     | Arithmetic(op) -> codeWriter.WriteArithmetic(op)
                     | Push(_, _) | Pop(_, _) -> codeWriter.WritePushPop(cmd)
+                    | Label(lbl) -> codeWriter.WriteLabel(lbl)   
+                    | Goto(lbl)  -> codeWriter.WriteGoto(lbl)  
+                    | IfGoto(lbl) -> codeWriter.WriteIf(lbl)   
                     | _ -> ()
                 | None -> ()
 

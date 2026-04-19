@@ -38,6 +38,7 @@ type CodeWriter(outputFilePath: string) =
              match op with
              | "and" -> "D&M"
              | "or" -> "D|M"
+             | _ -> ""
            writer.WriteLine("@SP")
            writer.WriteLine("A=M-1")
            writer.WriteLine("D=M")
@@ -53,7 +54,7 @@ type CodeWriter(outputFilePath: string) =
             writer.WriteLine("M=!M")
 
 
-        | "eq" | "gt" | "lt" ->
+        | "eq" | "gt" | "lt"  ->
             let labelTrue = sprintf "LABEL_TRUE_%d" labelCount
             let labelEnd = sprintf "LABEL_END_%d" labelCount
             labelCount <- labelCount + 1
@@ -84,6 +85,42 @@ type CodeWriter(outputFilePath: string) =
             writer.WriteLine("M=M-1")   // SP-- (Two numbers reduced to one result)
 
 
+        | "#gt" ->
+            let labelTrue = sprintf "LABEL_TRUE_%d" labelCount
+            let labelEnd = sprintf "LABEL_END_%d" labelCount
+            labelCount <- labelCount + 1
+
+            writer.WriteLine("@SP")
+            writer.WriteLine("A=M-1")
+            writer.WriteLine("D=M")
+            writer.WriteLine("A=A-1")
+            writer.WriteLine("D=M-D")
+
+            writer.WriteLine(sprintf "@%s" labelTrue)
+            writer.WriteLine("D;JLT")
+            writer.WriteLine(sprintf "@%s" labelTrue)
+            writer.WriteLine("D;JEQ")
+
+           // FALSE
+            writer.WriteLine("@SP")
+            writer.WriteLine("A=M-1")
+            writer.WriteLine("A=A-1")
+            writer.WriteLine("M=0")
+            writer.WriteLine(sprintf "@%s" labelEnd)
+            writer.WriteLine("0;JMP")
+
+          // TRUE
+            writer.WriteLine(sprintf "(%s)" labelTrue)
+            writer.WriteLine("@SP")
+            writer.WriteLine("A=M-1")
+            writer.WriteLine("A=A-1")
+            writer.WriteLine("M=-1")
+
+          // END
+            writer.WriteLine(sprintf "(%s)" labelEnd)
+            writer.WriteLine("@SP")
+            writer.WriteLine("M=M-1")
+ 
         | _ -> () 
 
     // Translate push and pop commands
@@ -231,6 +268,28 @@ type CodeWriter(outputFilePath: string) =
 
             | _ -> ()
         | _ -> ()
+
+
+    member this.WriteLabel(label: string) =
+        writer.WriteLine(sprintf "// label %s" label)
+        writer.WriteLine(sprintf "(%s)" label)
+
+    member this.WriteGoto(label: string) =
+        writer.WriteLine(sprintf "// goto %s" label)
+        writer.WriteLine(sprintf "@%s" label)
+        writer.WriteLine("0;JMP")
+
+    member this.WriteIf(label: string) =
+        writer.WriteLine(sprintf "// if-goto %s" label)
+        // 1. Pop the value in the top of the stack to D
+        writer.WriteLine("@SP")
+        writer.WriteLine("AM=M-1")
+        writer.WriteLine("D=M")
+        // 2. if D != 0, jump to label
+        writer.WriteLine(sprintf "@%s" label)
+        writer.WriteLine("D;JNE")
+
+
     // Closes the output file stream
     member this.Close() =
         writer.Close()
