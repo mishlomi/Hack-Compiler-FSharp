@@ -8,7 +8,10 @@ type Command =
     | Pop of segment: string * index: int
     | Label of string        
     | Goto of string        
-    | IfGoto of string    
+    | IfGoto of string   
+    | Function of name: string * numLocals: int 
+    | Call of name: string * numArgs: int       
+    | Return                                    
     | Unknown
 
 module Parser =
@@ -27,6 +30,9 @@ module Parser =
             | "label"   -> Some(Label(parts.[1]))    
             | "goto"    -> Some(Goto(parts.[1]))     
             | "if-goto" -> Some(IfGoto(parts.[1]))  
+            | "function" -> Some(Function(parts.[1], int parts.[2])) 
+            | "call"     -> Some(Call(parts.[1], int parts.[2]))     
+            | "return"   -> Some(Return)                             
             | "add" | "sub" | "neg" | "eq" | "gt" | "lt" | "and" | "or" | "not" -> 
                Some(Arithmetic(parts.[0]))
             | _ -> Some(Unknown)

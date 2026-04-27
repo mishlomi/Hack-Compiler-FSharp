@@ -5,7 +5,26 @@ type CodeWriter(outputFilePath: string) =
     // Open the output file for writing
     let writer = new StreamWriter(outputFilePath)
     let mutable labelCount = 0
+
+    let mutable callCount = 0
     let fileName = Path.GetFileNameWithoutExtension(outputFilePath)
+
+    // A mutable variable to track the current VM file being translated
+    // This is crucial for naming static variables correctly (e.g., FileName.index).
+    let mutable currentFileName = ""
+
+    // Updates the current file name. 
+    member this.SetFileName(name: string) = currentFileName <- name
+
+    // Writes the assembly instructions that effect the VM initialization (bootstrap code).
+    // It places the stack pointer at RAM[256] and calls the Sys.init function.
+    member this.WriteInit() =
+        writer.WriteLine("// Bootstrap code")
+        writer.WriteLine("@256")
+        writer.WriteLine("D=A")
+        writer.WriteLine("@SP")
+        writer.WriteLine("M=D")
+        this.WriteCall("Sys.init", 0)
 
     // Translates arithmetic VM commands 
     member this.WriteArithmetic(command: string) =
@@ -187,8 +206,8 @@ type CodeWriter(outputFilePath: string) =
                 writer.WriteLine("M=M+1")
             
             | "static" ->
-                // Static variables are translated to a unique symbol: @FileName.Index
-                writer.WriteLine(sprintf "@%s.%d" fileName index)
+                // Static variables are translated to a unique symbol: @currentFileName.Index
+                writer.WriteLine(sprintf "@%s.%d" currentFileName index)
                 writer.WriteLine("D=M")          // D = value of the static variable
                 
                 // Push the value from D onto the stack
@@ -261,24 +280,27 @@ type CodeWriter(outputFilePath: string) =
                 writer.WriteLine("A=M")          // Go to the top value's address
                 writer.WriteLine("D=M")          // D = top value of the stack
                 
-                // Store the value into the unique static label @FileName.Index
+                // Store the value into the unique static label @currentFileName.Index
                 // The assembler will assign a specific RAM address (16 to 255)
-                writer.WriteLine(sprintf "@%s.%d" fileName index)
+                writer.WriteLine(sprintf "@%s.%d" currentFileName index)
                 writer.WriteLine("M=D")          // Memory[static_var] = D
 
             | _ -> ()
         | _ -> ()
 
-
+    //Translates the 'lable' VM command. 
     member this.WriteLabel(label: string) =
         writer.WriteLine(sprintf "// label %s" label)
         writer.WriteLine(sprintf "(%s)" label)
 
+    //Translates the 'goto' VM command.
     member this.WriteGoto(label: string) =
         writer.WriteLine(sprintf "// goto %s" label)
         writer.WriteLine(sprintf "@%s" label)
         writer.WriteLine("0;JMP")
 
+
+    // Translates the 'if-goto' VM command.
     member this.WriteIf(label: string) =
         writer.WriteLine(sprintf "// if-goto %s" label)
         // 1. Pop the value in the top of the stack to D
@@ -290,7 +312,125 @@ type CodeWriter(outputFilePath: string) =
         writer.WriteLine("D;JNE")
 
 
+    // Translates the 'function' VM command.
+    // It writes the function's label and initializes its local variables to 0 by pushing 0s to the stack.
+    member this.WriteFunction(functionName: string, numLocals: int) =
+        writer.WriteLine(sprintf "// function %s %d" functionName numLocals)
+        writer.WriteLine(sprintf "(%s)" functionName)
+        
+        // Initialize local variables to 0
+        for _ in 1 .. numLocals do
+            writer.WriteLine("@SP")
+            writer.WriteLine("A=M")
+            writer.WriteLine("M=0")
+            writer.WriteLine("@SP")
+            writer.WriteLine("M=M+1")
+
+    // Translates the 'call' VM command.
+    // It saves the caller's state (return address, LCL, ARG, THIS, THAT) on the stack, 
+    // calculates the new ARG and LCL base addresses for the called function, and jumps to it.
+    member this.WriteCall(functionName: string, numArgs: int) =
+        writer.WriteLine(sprintf "// call %s %d" functionName numArgs)
+        
+        // Generate a unique return address label
+        let returnAddress = sprintf "%s$ret.%d" functionName callCount
+        callCount <- callCount + 1
+
+        // Internal helper function to push a value or a register to the stack
+        let pushValue isRegister (value: string) =
+            writer.WriteLine(sprintf "@%s" value)
+            if isRegister then writer.WriteLine("D=M") else writer.WriteLine("D=A")
+            writer.WriteLine("@SP")
+            writer.WriteLine("A=M")
+            writer.WriteLine("M=D")
+            writer.WriteLine("@SP")
+            writer.WriteLine("M=M+1")
+
+        // 1. Save the caller's state on the stack
+        pushValue false returnAddress // push return-address
+        pushValue true "LCL"          // push LCL
+        pushValue true "ARG"          // push ARG
+        pushValue true "THIS"         // push THIS
+        pushValue true "THAT"         // push THAT
+
+        // 2. Reposition ARG (ARG = SP - numArgs - 5)
+        writer.WriteLine("@SP")
+        writer.WriteLine("D=M")
+        writer.WriteLine(sprintf "@%d" (numArgs + 5))
+        writer.WriteLine("D=D-A")
+        writer.WriteLine("@ARG")
+        writer.WriteLine("M=D")
+
+        // 3. Reposition LCL (LCL = SP)
+        writer.WriteLine("@SP")
+        writer.WriteLine("D=M")
+        writer.WriteLine("@LCL")
+        writer.WriteLine("M=D")
+
+        // 4. Jump to the called function (goto f)
+        writer.WriteLine(sprintf "@%s" functionName)
+        writer.WriteLine("0;JMP")
+
+        // 5. Declare the return address label for the caller
+        writer.WriteLine(sprintf "(%s)" returnAddress)
+
+    // Translates the 'return' VM command.
+    // It restores the caller's state (LCL, ARG, THIS, THAT) from the saved frame,
+    // copies the return value to the caller's ARG[0], and jumps back to the return address.
+    member this.WriteReturn() =
+        writer.WriteLine("// return")
+        
+        // Save LCL (the FRAME base address) in a general purpose register R13
+        writer.WriteLine("@LCL")
+        writer.WriteLine("D=M")
+        writer.WriteLine("@R13") 
+        writer.WriteLine("M=D")
+        
+        // Save the return address in R14 (RET = *(FRAME - 5))
+        writer.WriteLine("@5")
+        writer.WriteLine("A=D-A")
+        writer.WriteLine("D=M")
+        writer.WriteLine("@R14") 
+        writer.WriteLine("M=D")
+        
+        // Copy the return value to the caller's ARG 0 position (*ARG = pop())
+        writer.WriteLine("@SP")
+        writer.WriteLine("AM=M-1")
+        writer.WriteLine("D=M")
+        writer.WriteLine("@ARG")
+        writer.WriteLine("A=M")
+        writer.WriteLine("M=D")
+        
+        // Reposition SP for the caller (SP = ARG + 1)
+        writer.WriteLine("@ARG")
+        writer.WriteLine("D=M+1")
+        writer.WriteLine("@SP")
+        writer.WriteLine("M=D")
+        
+        // Internal helper function to restore caller's memory segments
+        let restoreReg reg offset =
+            writer.WriteLine("@R13") // Access the FRAME base address
+            writer.WriteLine("D=M")
+            writer.WriteLine(sprintf "@%d" offset)
+            writer.WriteLine("A=D-A")
+            writer.WriteLine("D=M")
+            writer.WriteLine(sprintf "@%s" reg)
+            writer.WriteLine("M=D")
+
+        // Restore memory segments in reverse order of how they were pushed
+        restoreReg "THAT" 1
+        restoreReg "THIS" 2
+        restoreReg "ARG" 3
+        restoreReg "LCL" 4
+        
+        // Jump back to the return address saved in R14 (goto RET)
+        writer.WriteLine("@R14")
+        writer.WriteLine("A=M")
+        writer.WriteLine("0;JMP")
+
+
     // Closes the output file stream
     member this.Close() =
         writer.Close()
+
 
