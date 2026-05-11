@@ -1,0 +1,24 @@
+/**
+ * Main class for the Pong game application.
+ */
+class Main {
+
+    /**
+     * Initializes and executes the game.
+     */
+    function void main() {
+        // Declare a variable to hold the PongGame object instance
+        var PongGame game;
+
+        // Instantiate a new PongGame object using its constructor
+        let game = PongGame.new();
+
+        // Start the game's execution loop
+        do game.run();
+
+        // Properly free the memory occupied by the game object
+        do game.dispose();
+
+        return;
+    }
+}

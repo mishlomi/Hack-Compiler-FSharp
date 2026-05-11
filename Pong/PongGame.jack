@@ -1,0 +1,78 @@
+/**
+ * Handles the Pong game logic: initialization, event loop, and collisions.
+ */
+class PongGame {
+    field Bat bat;            // The paddle object
+    field Ball ball;          // The ball object
+    field int direction;      // Current paddle direction: 0=none, 1=left, 2=right
+    field boolean exit;       // Game state flag (true if the game should end)
+
+    /** * Constructs a new Pong game. 
+     */
+    constructor PongGame new() {
+        // Initialize a paddle at the bottom center (screen is 512x256)
+        let bat = Bat.new(230, 229, 50, 10);
+        
+        // Initialize a ball at the center of the screen
+        let ball = Ball.new(253, 100);
+        
+        // Delay the start to allow the player to prepare
+        do Sys.wait(7000);
+        
+        let direction = 0;
+        let exit = false;
+        return this;
+    }
+
+    /** * Frees the memory of the game objects. 
+     */
+    method void dispose() {
+        do bat.dispose();
+        do ball.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** * The main execution loop of the game. 
+     */
+    method void run() {
+        var char key;
+
+        while (~exit) {
+            // Read input from the keyboard
+            let key = Keyboard.keyPressed();
+
+            // Update direction based on key pressed
+            if (key = 130) { let direction = 1; } // Left Arrow
+            if (key = 132) { let direction = 2; } // Right Arrow
+            if (key = 0) { let direction = 0; }   // No key pressed
+
+            // Handle paddle movement
+            if (direction = 1) { do bat.moveLeft(); }
+            if (direction = 2) { do bat.moveRight(); }
+
+            // Handle automatic ball movement
+            do ball.move();
+            do bat.draw();
+
+            // --- COLLISION DETECTION LOGIC ---
+            // Check if the ball has reached the paddle's vertical height
+            if (ball.getY() > 224) {
+                // Check if the ball is within the paddle's horizontal boundaries
+                if ((ball.getX() > bat.getLeft()) & (ball.getX() < bat.getRight())) {
+                    do ball.bounce(); // Reverse ball direction
+                }
+            }
+            
+            // Check for "Game Over" condition (ball hits the bottom edge)
+            if (ball.getY() > 250) {
+                do Output.printString("Game Over");
+                let exit = true; // Break the game loop
+            }
+
+            // Control the game speed (frame rate)
+            do Sys.wait(10);
+        }
+        return;
+    }
+}

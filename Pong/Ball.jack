@@ -1,0 +1,92 @@
+/**
+ * Represents a graphical ball that moves and bounces on the screen.
+ */
+class Ball {
+    field int x, y;               // The ball's center position (x, y)
+    field int dX, dY;             // Movement direction  
+
+    /**
+     * Constructs a new ball with a given initial position.
+     */
+    constructor Ball new(int Ax, int Ay) {
+        let x = Ax;
+        let y = Ay;
+        // Set initial movement: 1 pixel right, 1 pixel down
+        let dX = 1;
+        let dY = 1;
+        do draw();
+        return this;
+    }
+
+    /**
+     * Disposes this ball and frees its memory.
+     */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /**
+     * Draws the ball on the screen (black circle).
+     */
+    method void draw() {
+        do Screen.setColor(true); // Set color to black
+        do Screen.drawCircle(x, y, 3); // Draw a circle with a radius of 3 pixels
+        return;
+    }
+
+    /**
+     * Erases the ball from the screen (white circle).
+     */
+    method void erase() {
+        do Screen.setColor(false); // Set color to white
+        do Screen.drawCircle(x, y, 3);
+        return;
+    }
+
+    /**
+     * Moves the ball by one step in the current direction.
+     * Handles bouncing off the walls and ceiling.
+     */
+    method void move() {
+        do erase(); // Remove current image before updating position
+        
+        let x = x + dX;
+        let y = y + dY;
+
+        // Wall collision: Bounce off left or right edges
+        if ((x < 5) | (x > 507)) { 
+            let dX = -dX; // Reverse horizontal direction
+        }
+        
+        // Ceiling collision: Bounce off the top edge
+        if (y < 5) { 
+            let dY = -dY; // Reverse vertical direction
+        }
+        
+        do draw(); // Redraw at the new position
+        return;
+    }
+
+    /**
+     * Accessor method for the x-coordinate.
+     */
+    method int getX() { 
+        return x; 
+    }
+
+    /**
+     * Accessor method for the y-coordinate.
+     */
+    method int getY() { 
+        return y; 
+    }
+
+    /**
+     * Reverses the vertical movement direction (typically on paddle collision).
+     */
+    method void bounce() { 
+        let dY = -dY; 
+        return; 
+    }
+}

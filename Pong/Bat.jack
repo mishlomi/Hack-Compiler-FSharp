@@ -1,0 +1,84 @@
+/**
+ * Represents a graphical paddle (bat) for the Pong game.
+ * Handles movement, drawing, and boundary detection.
+ */
+class Bat {
+    field int x, y;          // Screen coordinates of the top-left corner
+    field int width, height; // Dimensions of the paddle
+
+    /**
+     * Constructs a new paddle with a given position and size.
+     */
+    constructor Bat new(int Ax, int Ay, int Awidth, int Aheight) {
+        let x = Ax;
+        let y = Ay;
+        let width = Awidth;
+        let height = Aheight;
+        do draw(); // Render the paddle immediately upon creation
+        return this;
+    }
+
+    /**
+     * Deallocates the object's memory.
+     */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /**
+     * Renders the paddle on the screen using black color.
+     */
+    method void draw() {
+        do Screen.setColor(true); // true = black
+        do Screen.drawRectangle(x, y, x + width, y + height);
+        return;
+    }
+
+    /**
+     * Erases the paddle from the screen by painting it white.
+     */
+    method void erase() {
+        do Screen.setColor(false); // false = white
+        do Screen.drawRectangle(x, y, x + width, y + height);
+        return;
+    }
+
+    /**
+     * Moves the paddle 2 pixels to the left if it's within screen boundaries.
+     */
+    method void moveLeft() {
+        if (x > 1) {
+            do erase();     // Erase current position
+            let x = x - 2;  // Update coordinate
+            do draw();      // Draw at new position
+        }
+        return;
+    }
+
+    /**
+     * Moves the paddle 2 pixels to the right if it's within screen boundaries.
+     */
+    method void moveRight() {
+        if ((x + width) < 510) {
+            do erase();     // Erase current position
+            let x = x + 2;  // Update coordinate
+            do draw();      // Draw at new position
+        }
+        return;
+    }
+
+    /**
+     * Returns the left-most x-coordinate of the paddle.
+     */
+    method int getLeft() {
+        return x;
+    }
+
+    /**
+     * Returns the right-most x-coordinate of the paddle.
+     */
+    method int getRight() {
+        return x + width;
+    }
+}
