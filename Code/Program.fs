@@ -1,3 +1,4 @@
+(*
 
 open System.IO
 open Nand2Tetris
@@ -60,3 +61,34 @@ let main argv =
             codeWriter.Close()
             printfn "Success! ASM file created: %s" outputPath
             0 // Success
+
+            *)
+
+open System.IO
+open Nand2Tetris
+
+[<EntryPoint>]
+let main argv =
+    if argv.Length = 0 then
+        printfn "Usage: JackAnalyzer <path_to_file_or_directory>"
+        1 
+    else
+        let inputPath = argv.[0]
+        let isDirectory = Directory.Exists(inputPath)
+        let isFile = File.Exists(inputPath)
+
+        if not isDirectory && not isFile then
+            printfn "Error: Path not found."
+            1
+        else
+            let jackFiles = 
+                if isDirectory then
+                    Directory.GetFiles(inputPath, "*.jack")
+                else
+                    [| inputPath |]
+
+            // Iterate over all .jack files and generate the T.xml files
+            for file in jackFiles do
+                JackAnalyzerV0.processFile file
+            
+            0
