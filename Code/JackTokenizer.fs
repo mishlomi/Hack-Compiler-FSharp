@@ -105,3 +105,7 @@ type JackTokenizer(inputFilePath: string) =
         match currentToken with
         | Some t -> t.Value
         | None -> failwith "No current token available"
+
+
+    member this.CurrentToken = currentToken
+    // Exposes the currently active token to the CompilationEngine without advancing the stream

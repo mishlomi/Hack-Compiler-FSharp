@@ -6,10 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Parser.fs" />
-    <Compile Include="CodeWriter.fs" />
     <Compile Include="JackTokenizer.fs" />
-    <Compile Include="JackAnalyzerV0.fs" />
+    <Compile Include="CompilationEngine.fs" />
+    <Compile Include="JackAnalyzer.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   

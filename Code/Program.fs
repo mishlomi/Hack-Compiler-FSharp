@@ -89,6 +89,6 @@ let main argv =
 
             // Iterate over all .jack files and generate the T.xml files
             for file in jackFiles do
-                JackAnalyzerV0.processFile file
+                JackAnalyzer.processFile file
             
             0
