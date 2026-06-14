@@ -7,6 +7,8 @@
 
   <ItemGroup>
     <Compile Include="JackTokenizer.fs" />
+    <Compile Include="SymbolTable.fs" />
+    <Compile Include="VMWriter.fs" />
     <Compile Include="CompilationEngine.fs" />
     <Compile Include="JackAnalyzer.fs" />
     <Compile Include="Program.fs" />
