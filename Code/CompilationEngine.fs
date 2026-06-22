@@ -469,12 +469,14 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         let tokenVal = currentVal()
         let tokenType = currentType()
         
+        // term = int
         if tokenType = IntConst then
             // PROJECT 11: Push integer constants directly onto the stack
             let value = int (currentVal())
             vmWriter.WritePush("constant", value)
             processTerminal() // Consumes the IntConst     
             
+            // term = string
         elif tokenType = StringConst then
             // PROJECT 11: Dynamic String instantiation character-by-character
             let strValue = tokenVal
@@ -494,6 +496,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
             vmWriter.WritePush("temp", 1)       // Leave final populated string reference on stack
             processTerminal() // Consumes StringConst
             
+        // term = Keword (true/false/this)
         elif tokenType = Keyword then
             // PROJECT 11: Translate Jack keywords to explicit VM equivalents
             match currentVal() with
