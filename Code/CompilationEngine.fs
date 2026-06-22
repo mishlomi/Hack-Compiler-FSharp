@@ -2,8 +2,14 @@ namespace Nand2Tetris
 
 open System.IO
 
+// 
+// JackTokenizer → CompilationEngine → VMWriter
+//                        ↓
+//                  SymbolTable
+
 type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: VMWriter, symbolTable: SymbolTable) =
     let writer = new StreamWriter(outputPath)
+    //רמת הזחה
     let mutable indentLevel = 0
     let mutable className = "" // Cache the current class name for VM function naming
     let mutable whileLabelIndex = 0
@@ -86,6 +92,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         closeTag "class"
 
     // Compiles a class variable declaration: ('static' | 'field') type varName (',' varName)* ';'
+    // Class variable
     and compileClassVarDec () =
         openTag "classVarDec"
         
@@ -157,6 +164,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         | "method" ->
             // A method needs to align its 'this' segment to the object it was called on
             // The object pointer is passed implicitly as the very first argument (argument 0)
+            // push argument 0 // pop pointer 0
             vmWriter.WritePush("argument", 0)
             vmWriter.WritePop("pointer", 0)       // Anchor THIS pointer (pointer 0) to argument 0
             
@@ -169,6 +177,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
 
 
     // Compiles a comma-separated list of incoming parameters, excluding the outer parentheses
+    // Parameters (arguments [for method: ragument 0 = this])
     and compileParameterList () =
         openTag "parameterList"
         if currentVal() <> ")" then
@@ -188,6 +197,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         closeTag "parameterList"
 
     // Compiles a local variable declaration statement inside a subroutine: 'var' type varName (',' varName)* ';'
+    // Local variable
     and compileVarDec () =
         openTag "varDec"
         processTerminal() // 'var'
@@ -209,6 +219,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         closeTag "varDec"
 
     // Compiles a sequence of statements, matching valid statement leading keywords
+    // Keywords
     and compileStatements () =
         openTag "statements"
         let statementsKeywords = Set.ofList ["let"; "if"; "while"; "do"; "return"]
@@ -223,6 +234,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         closeTag "statements"
 
     // Compiles an assignment statement: 'let' varName ('[' expression ']')? '=' expression ';'
+    // Let
     and compileLet () =
         openTag "letStatement"
         processTerminal() // Consumes 'let'
@@ -258,7 +270,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
             // Top of stack is 'value'. Just under it is 'target RAM address'.
             vmWriter.WritePop("temp", 0)        // Save 'value' in temp 0
             vmWriter.WritePop("pointer", 1)     // Pop 'target RAM address' into THAT pointer (pointer 1)
-            vmWriter.WritePush("temp", 0)       // Restore 'value' onto stack
+            vmWriter.WritePush("temp", 0)       // Restore 'value' into stack
             vmWriter.WritePop("that", 0)        // Store 'value' into RAM[THAT] (which is a[i])
         else
             // Standard variable assignment
@@ -274,6 +286,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
 
 
     // Compiles a conditional branching statement: 'if' '(' expression ')' '{' statements '}' ('else' '{' statements '}')?
+    // if-else
     and compileIf () =
         openTag "ifStatement"
         
@@ -314,6 +327,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         closeTag "ifStatement"
 
     /// Compiles a conditional execution loop statement: 'while' '(' expression ')' '{' statements '}'
+    /// While
     and compileWhile () =
         openTag "whileStatement"
         
@@ -346,6 +360,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
    
 
    // Compiles an invocation subroutine call statement: 'do' subroutineCall ';'
+   // Do
     and compileDo () =
         openTag "doStatement"
         processTerminal() // 'do'
@@ -365,7 +380,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
             match symbolTable.Lookup(firstIdentifier) with
             | Some info ->
                 // It's an object method call (e.g., square.run())
-                // Push the object pointer as the first implicit argument
+                // Push the object pointer as the first implicit argument  
                 let segment = 
                     match info.Kind with
                     | STATIC -> "static"
@@ -401,6 +416,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         closeTag "doStatement"
 
     // Compiles a subroutine termination sequence: 'return' expression? ';'
+    // Return
     and compileReturn () =
         openTag "returnStatement"
         processTerminal() // 'return'
