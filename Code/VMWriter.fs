@@ -12,7 +12,7 @@ type VMWriter(outputPath: string) =
         writer.WriteLine($"pop {segment.ToLower()} {index}")
 
     member this.WriteArithmetic(command: string) =
-        // command peut être : ADD, SUB, NEG, EQ, GT, LT, AND, OR, NOT
+        // command can be: ADD, SUB, NEG, EQ, GT, LT, AND, OR, NOT
         writer.WriteLine(command.ToLower())
 
     member this.WriteLabel(label: string) =

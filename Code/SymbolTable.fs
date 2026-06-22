@@ -19,10 +19,13 @@ type SymbolTable() =
     let mutable classTable = Map.empty<string, SymbolInfo>
     let mutable subroutineTable = Map.empty<string, SymbolInfo>
     
-    // Counters used to assign automatic indices (0, 1, 2...)
+
+    // Counters for every SymbolKind. used to assign automatic indices (0, 1, 2...)
     let mutable indices = Map.ofList [ (STATIC, 0); (FIELD, 0); (ARGUMENT, 0); (LOCAL, 0) ]
 
+
     // Clears the local table every time we enter a new function
+    // A function that is run every time we start compiling a new function/method/constructor.
     member this.StartSubroutine() =
         subroutineTable <- Map.empty
         indices <- indices 
