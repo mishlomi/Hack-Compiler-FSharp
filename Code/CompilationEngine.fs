@@ -85,7 +85,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
             compileClassVarDec()
 
         // Loop to compile optional constructors, functions, or methods
-        while currentVal() = "constructor" || currentVal() = "function" || currentVal() = "method" do
+        while currentVal() = "constructor" || currentVal() = "function" || currentVal() = "method" || currentVal() = "procedure" do
             compileSubroutine()
 
         processTerminal() // '}'
@@ -125,7 +125,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         symbolTable.StartSubroutine()
         
         let subroutineKind = currentVal() // Remember if it's 'constructor', 'function', or 'method'
-        processTerminal() // 'constructor' | 'function' | 'method'
+        processTerminal() // 'constructor' | 'function' | 'method' | 'procedure' 
         processTerminal() // 'void' | type
         
         let subroutineName = currentVal() // Remember the function name
@@ -168,7 +168,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
             vmWriter.WritePush("argument", 0)
             vmWriter.WritePop("pointer", 0)       // Anchor THIS pointer (pointer 0) to argument 0
             
-        | _ -> () // 'function' (static) doesn't need memory initialization anchoring
+        | _ -> () // 'function' or 'procedure' (static) doesn't need memory initialization anchoring
 
         compileStatements() |> ignore
         processTerminal() // '}'
@@ -357,8 +357,90 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         vmWriter.WriteLabel(labelEnd)
         
         closeTag "whileStatement"
+
+
+
+ 
+    and compileDo () =
+      openTag "doStatement"
+      processTerminal() // 'do'
+    
+    // New syntax: do { statements } while (expression);
+      if currentVal() = "{" then
+        let index = whileLabelIndex
+        whileLabelIndex <- whileLabelIndex + 1
+        
+        let labelStart = $"DO_WHILE_EXP{index}"
+        
+        // In do-while, the body runs first
+        vmWriter.WriteLabel(labelStart)
+        
+        processTerminal() // '{'
+        compileStatements() |> ignore   // statements
+        processTerminal() // '}'
+        
+        processTerminal() // 'while'
+        processTerminal() // '('
+        compileExpression() |> ignore   // expression
+        processTerminal() // ')'
+        processTerminal() // ';'
+        
+        // If the condition is true, jump back to the beginning
+        vmWriter.WriteIf(labelStart)
+        
+      else
+        // Existing syntax: do subroutineCall;
+        let firstIdentifier = currentVal() // e.g., "Output", "square", or "moveSquare"
+        processTerminal() // subroutineName or className/varName
+        
+        let mutable nameOfCall = firstIdentifier
+        let mutable argCountOffset = 0
+        
+        if currentVal() = "." then
+            processTerminal() // '.'
+            let subroutineName = currentVal()
+            processTerminal() // subroutineName
+            
+            match symbolTable.Lookup(firstIdentifier) with
+            | Some info ->
+                // Object method call, e.g. square.move()
+                let segment = 
+                    match info.Kind with
+                    | STATIC -> "static"
+                    | FIELD -> "this"
+                    | ARGUMENT -> "argument"
+                    | LOCAL -> "local"
+                    
+                vmWriter.WritePush(segment, info.Index)
+                nameOfCall <- $"{info.Type}.{subroutineName}"
+                argCountOffset <- 1
+                
+            | None ->
+                // Static function call, e.g. Output.printInt()
+                nameOfCall <- $"{firstIdentifier}.{subroutineName}"
+                argCountOffset <- 0
+                
+        else
+            // Direct method call on the current object, e.g. do move();
+            vmWriter.WritePush("pointer", 0)
+            nameOfCall <- $"{className}.{firstIdentifier}"
+            argCountOffset <- 1
+                
+        processTerminal() // '('
+        let nArgs = compileExpressionList()
+        processTerminal() // ')'
+        processTerminal() // ';'
+        
+        vmWriter.WriteCall(nameOfCall, nArgs + argCountOffset)
+        
+        // In Jack, do ignores the returned value
+        vmWriter.WritePop("temp", 0)
+        
+      closeTag "doStatement"
    
 
+    
+(* 
    // Compiles an invocation subroutine call statement: 'do' subroutineCall ';'
    // Do
     and compileDo () =
@@ -415,6 +497,8 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         
         closeTag "doStatement"
 
+        *)
+
     // Compiles a subroutine termination sequence: 'return' expression? ';'
     // Return
     and compileReturn () =
@@ -441,7 +525,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
         compileTerm() |> ignore // Compiles the first term (e.g., pushes 1)
         
         // Iterates through chaining binary operators (e.g., 1 + (2 * 3))
-        while (Set.ofList ["+"; "-"; "*"; "/"; "&"; "|"; "<"; ">"; "="]).Contains(currentVal()) do
+        while (Set.ofList ["+"; "-"; "*"; "/"; "&"; "|"; "<"; ">"; "="; "$"]).Contains(currentVal()) do
             let op = currentVal() // Save the operator (e.g., "+")
             processTerminal() // Consume the operator symbol
             
@@ -450,6 +534,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
             // PROJECT 11: Write the corresponding VM arithmetic command or OS call
             match op with
             | "+" -> vmWriter.WriteArithmetic("ADD")
+            | "$" -> vmWriter.WriteArithmetic("ADD")
             | "-" -> vmWriter.WriteArithmetic("SUB")
             | "=" -> vmWriter.WriteArithmetic("EQ")
             | ">" -> vmWriter.WriteArithmetic("GT")
@@ -617,7 +702,7 @@ type CompilationEngine(tokenizer: JackTokenizer, outputPath: string, vmWriter: V
                 compileExpression()
                 count <- count + 1
                 
-        closeTag "expressionList"
+            closeTag "expressionList"
         count // Correctly aligned to be the return value of the function
 
     // Main entry point method to kick off the top-down parsing execution

@@ -33,13 +33,13 @@ type JackTokenizer(inputFilePath: string) =
     let mutable currentToken : Token option = None
 
     let keywords = 
-        Set.ofList ["class"; "constructor"; "function"; "method"; "field"; 
+        Set.ofList ["class"; "constructor"; "function"; "method"; "procedure"; "field"; 
                     "static"; "var"; "int"; "char"; "boolean"; "void"; 
                     "true"; "false"; "null"; "this"; "let"; "do"; 
                     "if"; "else"; "while"; "return"]
 
     let symbols = 
-        Set.ofList ['{'; '}'; '('; ')'; '['; ']'; '.'; ','; ';'; '+'; '-'; '*'; '/'; '&'; '|'; '<'; '>'; '='; '~']
+        Set.ofList ['{'; '}'; '('; ')'; '['; ']'; '.'; ','; ';'; '+'; '-'; '*'; '/'; '&'; '|'; '<'; '>'; '='; '~'; '$']
 
     // Advances the internal pointer past any whitespace characters
     let skipWhitespace () =
