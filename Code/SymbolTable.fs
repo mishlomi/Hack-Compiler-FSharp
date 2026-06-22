@@ -1,9 +1,13 @@
 namespace Nand2Tetris
 
-// Types de variables dans la grammaire Jack
+// Variable types in the Jack grammar
 type SymbolKind = STATIC | FIELD | ARGUMENT | LOCAL
+// Jack static   → VM static
+// Jack field    → VM this
+// Jack argument → VM argument
+// Jack local    → VM local
 
-// Structure d'une ligne de notre table
+// Structure of one row in our table
 type SymbolInfo = {
     Type: string
     Kind: SymbolKind
@@ -11,37 +15,37 @@ type SymbolInfo = {
 }
 
 type SymbolTable() =
-    // Utilisation de maps modifiables pour stocker les variables
+    // Use mutable maps to store the variables
     let mutable classTable = Map.empty<string, SymbolInfo>
     let mutable subroutineTable = Map.empty<string, SymbolInfo>
     
-    // Des compteurs pour attribuer les indices automatiques (0, 1, 2...)
+    // Counters used to assign automatic indices (0, 1, 2...)
     let mutable indices = Map.ofList [ (STATIC, 0); (FIELD, 0); (ARGUMENT, 0); (LOCAL, 0) ]
 
-    // Vide la table locale à chaque fois qu'on entre dans une nouvelle fonction
+    // Clears the local table every time we enter a new function
     member this.StartSubroutine() =
         subroutineTable <- Map.empty
         indices <- indices 
             |> Map.add ARGUMENT 0 
             |> Map.add LOCAL 0
 
-    // Ajoute une variable dans la bonne table
+    // Adds a variable to the correct table
     member this.Define(name: string, typeStr: string, kind: SymbolKind) =
         let idx = indices.[kind]
         let info = { Type = typeStr; Kind = kind; Index = idx }
         
-        // On incrémente le compteur pour la prochaine variable de cette catégorie
+        // Increment the counter for the next variable of this category
         indices <- Map.add kind (idx + 1) indices
         
         match kind with
         | STATIC | FIELD -> classTable <- Map.add name info classTable
         | ARGUMENT | LOCAL -> subroutineTable <- Map.add name info subroutineTable
 
-    // Compte combien de variables on a pour un segment donné (utile pour l'en-tête VM)
+    // Counts how many variables we have for a given segment (useful for the VM function header)
     member this.VarCount(kind: SymbolKind) =
         indices.[kind]
 
-    // Cherche une variable (regarde d'abord au niveau local, puis global)
+    // Looks up a variable, first in the local scope, then in the class scope
     member this.Lookup(name: string) : SymbolInfo option =
         if subroutineTable.ContainsKey(name) then Some subroutineTable.[name]
         elif classTable.ContainsKey(name) then Some classTable.[name]
